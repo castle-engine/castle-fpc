@@ -1,0 +1,9 @@
+# See https://help.github.com/en/articles/dealing-with-line-endings
+# about line endings.
+
+# We use this .gitattributes to force line endings to be LF in the repository
+# for all bash scripts *always*, even on Windows.
+# bash from Cygwin/MinGW expects LF by default.
+
+/build_fpc text eol=lf
+/build_utilities text eol=lf
