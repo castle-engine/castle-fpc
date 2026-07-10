@@ -107,6 +107,10 @@ jobs:
           APPLE_BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_BUILD_CERTIFICATE_BASE64 }}
           APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
           APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+          # for Azure codesigning
+          AZURE_ENDPOINT: ${{ vars.AZURE_ENDPOINT }}
+          AZURE_CODESIGNING_ACCOUNT_NAME: ${{ vars.AZURE_CODESIGNING_ACCOUNT_NAME }}
+          AZURE_CERTIFICATE_PROFILE_NAME: ${{ vars.AZURE_CERTIFICATE_PROFILE_NAME }}
         run: |
           # prepare signing for macOS
           if [[ "${{ matrix.build_os }}" = "darwin" && "${{ github.ref }}" = "refs/heads/master" ]]; then
@@ -115,7 +119,6 @@ jobs:
           fi
           # prepare signing for Windows
           if [[ "${{ matrix.build_os }}" = "win64" && "${{ github.ref }}" = "refs/heads/master" ]]; then
-            export AZURE_SIGNING_METADATA="windows-signing/azure_metadata.json"
             export AZURE_SIGNING_CLIENT_PARENT="$RUNNER_TEMP/sign-tools/"
             export SIGN_EXECUTABLE="/tmp/castle-build-ci/windows/sign_executable"
             /tmp/castle-build-ci/windows/setup_signing
@@ -131,9 +134,13 @@ jobs:
       # Additionally, when on Win64, build and release also Win32 FPC.
       - name: Build FPC (for Win32)
         if: ${{ matrix.build_os == 'win64' && matrix.build_cpu == 'x86_64' }}
+        env:
+          # for Azure codesigning
+          AZURE_ENDPOINT: ${{ vars.AZURE_ENDPOINT }}
+          AZURE_CODESIGNING_ACCOUNT_NAME: ${{ vars.AZURE_CODESIGNING_ACCOUNT_NAME }}
+          AZURE_CERTIFICATE_PROFILE_NAME: ${{ vars.AZURE_CERTIFICATE_PROFILE_NAME }}
         run: |
           if [[ "${{ matrix.build_os }}" = "win64" && "${{ github.ref }}" = "refs/heads/master" ]]; then
-            export AZURE_SIGNING_METADATA="windows-signing/azure_metadata.json"
             export AZURE_SIGNING_CLIENT_PARENT="$RUNNER_TEMP/sign-tools/"
             export SIGN_EXECUTABLE="/tmp/castle-build-ci/windows/sign_executable"
           fi
