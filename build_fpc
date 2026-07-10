@@ -107,10 +107,10 @@ do_setup_environment ()
   ZIP_NAME="fpc-${FPC_VERSION_TO_ZIP}${OS}-${CPU}.zip"
 
   # calculate NEEDS_FPC_FIXES_BRANCH (only relevant when FPC_VERSION_LABEL = stable)
-  if [ "${OS}" = "darwin" -o \
-      '(' "${OS}" = "linux" -a "${CPU}" = "aarch64" ')' -o \
-      '(' "${OS}" = "linux" -a "${CPU}" = "arm" ')' \
-    ]; then
+  if [[ "${OS}" = "darwin" || \
+      ( "${OS}" = "linux" && "${CPU}" = "aarch64" ) || \
+      ( "${OS}" = "linux" && "${CPU}" = "arm" ) \
+    ]]; then
 
     # Build FPC 3.2.3 on macOS, to avoid failures like:
     #
@@ -193,6 +193,10 @@ do_fpc_sources_get ()
     DEPTH=''
   fi
 
+  # Note: We disable shellcheck for ${DEPTH}, instead of converting DEPTH
+  # to a bash array, because bash array with () on older bash 3.x used by macOS
+  # would expand with error.
+  # shellcheck disable=SC2086
   git clone https://gitlab.com/freepascal.org/fpc/source.git \
     -c advice.detachedHead=false \
     ${DEPTH} --single-branch --branch "${FPC_BRANCHTAG}" fpcsrc
@@ -234,9 +238,9 @@ do_calculate_bootstrap_ppc ()
   # fallback to system-wide ppc* if not found
   if [ ! -f "${BOOTSTRAP_PPC_NAME}" ]; then
     echo "Falling back to system-wide ${BOOTSTRAP_PPC_SUFFIX} binary."
-    BOOTSTRAP_PPC_NAME="`which \"${BOOTSTRAP_PPC_SUFFIX}\"`"
+    BOOTSTRAP_PPC_NAME="$(which "${BOOTSTRAP_PPC_SUFFIX}")"
     if which cygpath > /dev/null; then
-      BOOTSTRAP_PPC_NAME="`cygpath --mixed \"${BOOTSTRAP_PPC_NAME}\"`"
+      BOOTSTRAP_PPC_NAME="$(cygpath --mixed "${BOOTSTRAP_PPC_NAME}")"
     fi
     echo "Found system-wide ${BOOTSTRAP_PPC_SUFFIX} binary: ${BOOTSTRAP_PPC_NAME}"
   fi
@@ -253,7 +257,8 @@ do_calculate_bootstrap_ppc ()
   # (later "make ..." call will also check it unless we use OVERRIDEVERSIONCHECK=1,
   # but then we should not need OVERRIDEVERSIONCHECK=1, we use the right version)
   local VALID_BOOTSTRAP_PPC_VERSION='3.2.2'
-  local CURRENT_BOOTSTRAP_PPC_VERSION=`${BOOTSTRAP_PPC_NAME} -iV`
+  local CURRENT_BOOTSTRAP_PPC_VERSION
+  CURRENT_BOOTSTRAP_PPC_VERSION=$(${BOOTSTRAP_PPC_NAME} -iV)
   if [ "$IS_WINDOWS" = 'true' ]; then
     # remove \r at the end, following https://superuser.com/questions/489180/remove-r-from-echoing-out-in-bash-script
     CURRENT_BOOTSTRAP_PPC_VERSION="${CURRENT_BOOTSTRAP_PPC_VERSION%%[[:cntrl:]]}"
@@ -282,7 +287,7 @@ do_fpc_build ()
   cd fpcsrc/
   make clean all install \
     INSTALL_PREFIX="${FPC_INSTALL_PREFIX}" \
-    FPC=${BOOTSTRAP_PPC_NAME} \
+    FPC="${BOOTSTRAP_PPC_NAME}" \
     OPT="${FPC_OPTS}"
 
   if [ "${IS_WINDOWS}" = "true" ]; then
@@ -353,9 +358,9 @@ do_pack_zip ()
     #
     # But 7z also seems more actively maintained, so let's use it on all
     # platforms if we can.
-    7z a ${ZIP_NAME} fpc/
+    7z a "${ZIP_NAME}" fpc/
   else
-    zip -r ${ZIP_NAME} fpc/
+    zip -r "${ZIP_NAME}" fpc/
   fi
 }
 
@@ -363,7 +368,8 @@ do_pack_zip ()
 # returns correct version and OS/CPU.
 do_test_version_os_cpu ()
 {
-  local ACTUAL_FPC_VERSION="`fpc/bin/fpc -iV`"
+  local ACTUAL_FPC_VERSION
+  ACTUAL_FPC_VERSION="$(fpc/bin/fpc -iV)"
   if [ "$IS_WINDOWS" = 'true' ]; then
     # remove \r at the end, following https://superuser.com/questions/489180/remove-r-from-echoing-out-in-bash-script
     ACTUAL_FPC_VERSION="${ACTUAL_FPC_VERSION%%[[:cntrl:]]}"
@@ -373,7 +379,8 @@ do_test_version_os_cpu ()
     exit 1
   fi
 
-  local ACTUAL_OS="`fpc/bin/fpc -iTO`"
+  local ACTUAL_OS
+  ACTUAL_OS="$(fpc/bin/fpc -iTO)"
   if [ "$IS_WINDOWS" = 'true' ]; then
     # remove \r at the end, following https://superuser.com/questions/489180/remove-r-from-echoing-out-in-bash-script
     ACTUAL_OS="${ACTUAL_OS%%[[:cntrl:]]}"
@@ -383,7 +390,8 @@ do_test_version_os_cpu ()
     exit 1
   fi
 
-  local ACTUAL_CPU="`fpc/bin/fpc -iTP`"
+  local ACTUAL_CPU
+  ACTUAL_CPU="$(fpc/bin/fpc -iTP)"
   if [ "$IS_WINDOWS" = 'true' ]; then
     # remove \r at the end, following https://superuser.com/questions/489180/remove-r-from-echoing-out-in-bash-script
     ACTUAL_CPU="${ACTUAL_CPU%%[[:cntrl:]]}"
@@ -398,12 +406,14 @@ do_test_version_os_cpu ()
 # can compile a simple program.
 do_test_program ()
 {
+  # shellcheck disable=SC2086
   fpc/bin/fpc \
     "-Fufpc/units/${CPU}-${OS}/*" \
     ${FPC_OPTS} \
     test_program.lpr
 
-  local TEST_PROGRAM_OUTPUT="`./test_program`"
+  local TEST_PROGRAM_OUTPUT
+  TEST_PROGRAM_OUTPUT="$(./test_program)"
   if [ "$IS_WINDOWS" = 'true' ]; then
     # remove \r at the end, following https://superuser.com/questions/489180/remove-r-from-echoing-out-in-bash-script
     TEST_PROGRAM_OUTPUT="${TEST_PROGRAM_OUTPUT%%[[:cntrl:]]}"

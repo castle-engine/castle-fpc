@@ -1,6 +1,9 @@
+#!/bin/bash
+
 # ------------------------------------------------------------------------
 # bash utilities useful both when building FPC and Lazarus.
 # Use them by "source build_utilities" in bash scripts.
+# (shebang is not used when sourcing, we only place it here to instruct shellcheck.)
 #
 # They are adjusted to be used in "bash strict mode",
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/ ,
@@ -14,14 +17,14 @@ utils_setup_environment ()
   # On Windows they differ:
   # - WORKSPACE_ROOT_UNIX is in Cygwin path format (with /, without :, more suitable for $PATH)
   # - WORKSPACE_ROOT is in native (on Windows) path format, understood also by non-Msys2/Cygwin tools
-  WORKSPACE_ROOT_UNIX="`pwd`"
+  WORKSPACE_ROOT_UNIX=$(pwd)
   WORKSPACE_ROOT="${WORKSPACE_ROOT_UNIX}"
   if which cygpath > /dev/null; then
-    WORKSPACE_ROOT="`cygpath --mixed \"${WORKSPACE_ROOT}\"`"
+    WORKSPACE_ROOT=$(cygpath --mixed "${WORKSPACE_ROOT}")
   fi
 
   # calculate IS_UNIX, IS_WINDOWS (happen to be negation of each other now)
-  if [ "${OS}" = "win64" -o "${OS}" = "win32" ]; then
+  if [[ "${OS}" = "win64" || "${OS}" = "win32" ]]; then
     IS_UNIX=false
     IS_WINDOWS=true
   else
@@ -99,6 +102,7 @@ utils_download_and_setup_fpc_build_resources ()
   # E.g. `mv.exe` is some archaic version that doesn't tolerate last
   # parameter having final slash (would fail at "mv ... fpc/bin/",
   # while the standard "mv" from both MSys2 (in GHA) and Cygwin can handle it).
+  # shellcheck disable=SC2034
   RESTORE_PATH="$PATH"
 
   # Note that we need to append here to PATH using WORKSPACE_ROOT_UNIX,
@@ -119,8 +123,8 @@ utils_calculate_fpc_opts ()
 
     # This is following FpcUpDeluxe:
     # MacOS 10.14 Mojave and newer have libs and tools in new, yet non-standard directory
-    MAC_SDK="`xcrun --show-sdk-path`"
-    MAC_XCODE="`xcode-select --print-path`"
+    MAC_SDK=$(xcrun --show-sdk-path)
+    MAC_XCODE=$(xcode-select --print-path)
     FPC_OPTS="${FPC_OPTS} -XR${MAC_SDK} -Fl${MAC_SDK}/usr/lib -FD${MAC_XCODE}/Toolchains/XcodeDefault.xctoolchain/usr/bin"
 
     # Linking GUI applications on newer macOS, with Aarch64,
@@ -135,7 +139,7 @@ utils_calculate_fpc_opts ()
     # https://github.com/LongDirtyAnimAlf/fpcupdeluxe/blob/63228f718e24e0a5e77c8f5b70e269ba92393b9d/sources/crossinstallers/m_darwin_to_apple_base.pas#L232
     # Some discussion in:
     # https://gitlab.com/freepascal.org/lazarus/lazarus/-/issues/41570
-    MAC_SDK_VERSION="`xcrun --show-sdk-version`"
+    MAC_SDK_VERSION=$(xcrun --show-sdk-version)
     echo "macOS SDK version is ${MAC_SDK_VERSION}, assuming it is >= 11.0."
     FPC_OPTS="${FPC_OPTS} -WM10.15"
   fi
