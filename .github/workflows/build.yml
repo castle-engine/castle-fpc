@@ -15,10 +15,13 @@ defaults:
   run:
     shell: bash
 
-# Necessary permissions to sign into Azure by GitHub Actions, to sign Windows executables.
+# Necessary permissions to:
+# - sign into Azure by GitHub Actions, to sign Windows executables.
+#   (id-token: write, contents: at least read).
+# - send to GitHub release (contents: write).
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 jobs:
   build_native:
