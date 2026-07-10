@@ -1,0 +1,6 @@
+{
+  "Endpoint": "https://plc.codesigning.azure.net",
+  "CodeSigningAccountName": "cge-artifact-signer",
+  "CertificateProfileName": "cge-sign-releases",
+  "CorrelationId": "signing-castle-fpc"
+}

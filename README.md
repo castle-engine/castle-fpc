@@ -105,6 +105,10 @@ Note that we don't fork FPC here.
 
     Building FPC ourselves, as a simple zip for all platforms we need, is simplest.
 
+- We also sign Windows executables (EXE, DLL) with _Azure Artifact Signing_ from Microsoft. See [castle-build-ci/windows/](https://github.com/castle-engine/castle-build-ci/tree/master/windows).
+
+- We also sign macOS executables with _codesign_ using our Apple Developer ID. See [castle-build-ci/apple/](https://github.com/castle-engine/castle-build-ci/tree/master/apple/).
+
 Note: We have also repo where we build Lazarus, https://github.com/castle-engine/castle-lazarus . But it has more limited use-case now (as we don't bundle Lazarus with CGE).
 
 ## Future
