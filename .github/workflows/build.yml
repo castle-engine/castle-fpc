@@ -15,6 +15,11 @@ defaults:
   run:
     shell: bash
 
+# Necessary permissions to sign into Azure by GitHub Actions, to sign Windows executables.
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build_native:
     name: Build Native
