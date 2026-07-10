@@ -54,6 +54,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # To write multi-line scripts in steps below,
+      # we have to set SHELLOPTS=igncr, otherwise Cygwin/MinGW bash
+      # fails because GitHub Actions create temp scripts with CRLF
+      # line endings.
+      # See https://github.com/cygwinports/bash for docs of "igncr".
+      - name: Make bash multi-line scripts execute OK on Windows
+        if: ${{ runner.os == 'Windows' }}
+        run: echo "SHELLOPTS=igncr" >> $GITHUB_ENV
+
       # Old approach:
       # Get last stable FPC to bootstrap.
       # Now: This is no longer used: we rely fully on our bootstrap-fpc/ subdirectory.
@@ -79,14 +88,16 @@ jobs:
             --depth=1 --single-branch --branch=master
 
       - name: Sign executables for Apple platforms
-        if: ${{ matrix.build_os == 'darwin' }}
+        if: ${{ matrix.build_os == 'darwin' && github.ref == 'refs/heads/master' }}
         env:
           # for codesigning
           APPLE_IDENTITY: ${{ vars.APPLE_IDENTITY }}
           APPLE_BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_BUILD_CERTIFICATE_BASE64 }}
           APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
           APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
-        run: /tmp/castle-build-ci/apple/sign_executable fpc/bin
+        run: |
+          /tmp/castle-build-ci/apple/setup_signing
+          /tmp/castle-build-ci/apple/sign_executable fpc/bin
 
       - name: Sign executables for Windows (Azure Login)
         if: ${{ matrix.build_os == 'win64' && github.ref == 'refs/heads/master' }}
@@ -102,7 +113,7 @@ jobs:
           export AZURE_SIGNING_METADATA="windows-signing/azure_metadata.json"
           export AZURE_SIGNING_CLIENT_PARENT="$RUNNER_TEMP/sign-tools/"
           /tmp/castle-build-ci/windows/setup_signing
-          /tmp/castle-build-ci/windows/sign_executables fpc/bin
+          /tmp/castle-build-ci/windows/sign_executable fpc/bin
 
       - name: Release Artifacts
         if: ${{ github.ref == 'refs/heads/master' }}
@@ -119,7 +130,7 @@ jobs:
         run: |
           export AZURE_SIGNING_METADATA="windows-signing/azure_metadata.json"
           export AZURE_SIGNING_CLIENT_PARENT="$RUNNER_TEMP/sign-tools/"
-          /tmp/castle-build-ci/windows/sign_executables fpc/bin
+          /tmp/castle-build-ci/windows/sign_executable fpc/bin
       - name: Release Artifacts (for Win32)
         if: ${{ matrix.build_os == 'win64' && matrix.build_cpu == 'x86_64' && github.ref == 'refs/heads/master' }}
         run: gh release --repo ${{ github.repository }} upload snapshot --clobber fpc-*.zip
