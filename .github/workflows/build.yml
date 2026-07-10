@@ -77,9 +77,6 @@ jobs:
       #   if: ${{ matrix.is_macos }}
       #   run: brew install fpc
 
-      - name: Build FPC
-        run: ./build_fpc ${{ matrix.build_os }} ${{ matrix.build_cpu }} ${{ matrix.fpc_version }}
-
       - name: Get Castle Game Engine CI scripts (for signing)
         if: ${{ matrix.build_os == 'darwin' || matrix.build_os == 'win64' }}
         run: |
@@ -87,19 +84,7 @@ jobs:
           git clone https://github.com/castle-engine/castle-build-ci.git \
             --depth=1 --single-branch --branch=master
 
-      - name: Sign executables for Apple platforms
-        if: ${{ matrix.build_os == 'darwin' && github.ref == 'refs/heads/master' }}
-        env:
-          # for codesigning
-          APPLE_IDENTITY: ${{ vars.APPLE_IDENTITY }}
-          APPLE_BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_BUILD_CERTIFICATE_BASE64 }}
-          APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
-          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
-        run: |
-          /tmp/castle-build-ci/apple/setup_signing
-          /tmp/castle-build-ci/apple/sign_executable fpc/bin
-
-      - name: Sign executables for Windows (Azure Login)
+      - name: Azure Login (for signing on Windows)
         if: ${{ matrix.build_os == 'win64' && github.ref == 'refs/heads/master' }}
         uses: azure/login@v3
         with:
@@ -107,13 +92,27 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Sign executables for Windows (signtool)
-        if: ${{ matrix.build_os == 'win64' && github.ref == 'refs/heads/master' }}
+      - name: Build FPC
+        env:
+          # for Apple codesigning
+          APPLE_IDENTITY: ${{ vars.APPLE_IDENTITY }}
+          APPLE_BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_BUILD_CERTIFICATE_BASE64 }}
+          APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
         run: |
-          export AZURE_SIGNING_METADATA="windows-signing/azure_metadata.json"
-          export AZURE_SIGNING_CLIENT_PARENT="$RUNNER_TEMP/sign-tools/"
-          /tmp/castle-build-ci/windows/setup_signing
-          /tmp/castle-build-ci/windows/sign_executable fpc/bin
+          # prepare signing for macOS
+          if [[ "${{ matrix.build_os }}" = "darwin" && "${{ github.ref }}" = "refs/heads/master" ]]; then
+            /tmp/castle-build-ci/apple/setup_signing
+            export SIGN_EXECUTABLE="/tmp/castle-build-ci/apple/sign_executable"
+          fi
+          # prepare signing for Windows
+          if [[ "${{ matrix.build_os }}" = "win64" && "${{ github.ref }}" = "refs/heads/master" ]]; then
+            export AZURE_SIGNING_METADATA="windows-signing/azure_metadata.json"
+            export AZURE_SIGNING_CLIENT_PARENT="$RUNNER_TEMP/sign-tools/"
+            export SIGN_EXECUTABLE="/tmp/castle-build-ci/windows/sign_executable"
+            /tmp/castle-build-ci/windows/setup_signing
+          fi
+          ./build_fpc ${{ matrix.build_os }} ${{ matrix.build_cpu }} ${{ matrix.fpc_version }}
 
       - name: Release Artifacts
         if: ${{ github.ref == 'refs/heads/master' }}
@@ -124,13 +123,13 @@ jobs:
       # Additionally, when on Win64, build and release also Win32 FPC.
       - name: Build FPC (for Win32)
         if: ${{ matrix.build_os == 'win64' && matrix.build_cpu == 'x86_64' }}
-        run: ./build_fpc win32 i386 ${{ matrix.fpc_version }}
-      - name: Sign executables for Windows (signtool) (for Win32)
-        if: ${{ matrix.build_os == 'win64' && matrix.build_cpu == 'x86_64' && github.ref == 'refs/heads/master' }}
         run: |
-          export AZURE_SIGNING_METADATA="windows-signing/azure_metadata.json"
-          export AZURE_SIGNING_CLIENT_PARENT="$RUNNER_TEMP/sign-tools/"
-          /tmp/castle-build-ci/windows/sign_executable fpc/bin
+          if [[ "${{ matrix.build_os }}" = "win64" && "${{ github.ref }}" = "refs/heads/master" ]]; then
+            export AZURE_SIGNING_METADATA="windows-signing/azure_metadata.json"
+            export AZURE_SIGNING_CLIENT_PARENT="$RUNNER_TEMP/sign-tools/"
+            export SIGN_EXECUTABLE="/tmp/castle-build-ci/windows/sign_executable"
+          fi
+          ./build_fpc win32 i386 ${{ matrix.fpc_version }}
       - name: Release Artifacts (for Win32)
         if: ${{ matrix.build_os == 'win64' && matrix.build_cpu == 'x86_64' && github.ref == 'refs/heads/master' }}
         run: gh release --repo ${{ github.repository }} upload snapshot --clobber fpc-*.zip
