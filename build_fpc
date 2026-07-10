@@ -70,7 +70,7 @@ set -euo pipefail
 #
 # Output: fpc-*.zip file.
 #
-# If set, $SIGN_EXECUTABLE will be used to sign executables in fpc/bin/
+# If set, $SIGN_EXECUTABLES will be used to sign executables in fpc/bin/
 # after building FPC (and before packaging them to zip).
 # This can be set to our Apple or Windows signing scripts
 # from https://github.com/castle-engine/castle-build-ci/ .
@@ -441,8 +441,8 @@ do_calculate_bootstrap_ppc
 utils_calculate_fpc_opts
 do_fpc_build
 do_fix_layout
-if [ -n "${SIGN_EXECUTABLE:-}" ]; then
-  "${SIGN_EXECUTABLE}" fpc/bin/
+if [ -n "${SIGN_EXECUTABLES:-}" ]; then
+  "${SIGN_EXECUTABLES}" fpc/bin/
 fi
 do_copy_sources
 do_pack_zip
