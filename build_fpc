@@ -93,8 +93,9 @@ source build_utilities
 # Determine variables used through the rest of the script.
 do_setup_environment ()
 {
-  # latest from https://gitlab.com/freepascal.org/fpc/source/ on 2026-01-11
-  FPC_UNSTABLE_COMMIT='bdb427b08454cff85dca2fbaccf7249716962845'
+  # latest from https://gitlab.com/freepascal.org/fpc/source/ on 2026-11-20,
+  # includes fcl-svg (added in late September 2026), used by CGE to load SVG
+  FPC_UNSTABLE_COMMIT='2f2835deb795ce0f00e94c1e8ab31d22967ba5cd'
 
   # calculate ZIP_NAME
   case "${FPC_VERSION_LABEL}" in
