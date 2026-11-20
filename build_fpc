@@ -38,7 +38,7 @@ set -euo pipefail
 # - stable: means to build the "best stable" FPC for Castle Game Engine,
 #   which now means:
 #   - 3.2.2 for most platforms
-#   - 3.2.3 (latest state of fixes_3_2 branch) for some exceptional platforms:
+#   - 3.2.5 (latest state of fixes_3_2 branch) for some exceptional platforms:
 #     macOS/anything, Linux/Arm, Linux/Aarch64.
 #
 # - "unstable": means to build FPC 3.3.1 from from "main" branch
@@ -118,7 +118,7 @@ do_setup_environment ()
       ( "${OS}" = "linux" && "${CPU}" = "arm" ) \
     ]]; then
 
-    # Build FPC 3.2.3 on macOS, to avoid failures like:
+    # Build FPC from fixes_3_2 branch on macOS, to avoid failures like:
     #
     # """
     # Assembling rtti
@@ -132,7 +132,7 @@ do_setup_environment ()
     # https://github.com/LongDirtyAnimAlf/fpcupdeluxe/issues/745
     # https://gitlab.com/freepascal.org/fpc/source/-/commit/e749c81040070d3e8cb0c070e6e63f2f9b54fef4
 
-    # Build FPC 3.2.3 on Linux/Arm or Aarc64 to avoid linking errors:
+    # Build FPC from fixes_3_2 branch on Linux/Arm or Aarch64 to avoid linking errors:
     #  (.text+0x54): undefined reference to `__libc_csu_init'
     # /usr/bin/ld: (.text+0x58): undefined reference to `__libc_csu_init'
     # /usr/bin/ld: (.text+0x5c): undefined reference to `__libc_csu_fini'
@@ -149,7 +149,10 @@ do_setup_environment ()
     FPC_COMMIT="${FPC_UNSTABLE_COMMIT}"
   elif [ "${NEEDS_FPC_FIXES_BRANCH}" = "true" ]; then
     FPC_BRANCHTAG="fixes_3_2"
-    FPC_VERSION="3.2.3"
+    # Must match the version in fixes_3_2 branch (compiler/version.pas),
+    # it determines the directory name fpc/lib/fpc/<version>/ after "make install".
+    # fixes_3_2 was bumped from 3.2.3 to 3.2.5 on 2026-11-11.
+    FPC_VERSION="3.2.5"
     FPC_COMMIT=""
   else
     FPC_BRANCHTAG="release_3_2_2"
