@@ -153,13 +153,7 @@ jobs:
 
   build_arm_runner:
     name: Build on ARM Runner (for Raspberry Pi)
-    # Not ubuntu-latest (Ubuntu 26.04 now), because pguyot/arm-runner-action@v2
-    # (v2.6.5) fails there: it tries to install qemu-user-static, which is only
-    # a virtual package in Ubuntu 26.04 ("has no installation candidate").
-    # Fixed upstream in https://github.com/pguyot/arm-runner-action/commit/5439f417 ,
-    # but not released yet.
-    # TODO: Go back to ubuntu-latest once a release includes it.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         arch: [raspberry-pi-32, raspberry-pi-64]
@@ -171,7 +165,7 @@ jobs:
 
         # additional defines for Raspberry Pi 32-bit (Arm)
         - arch: raspberry-pi-32
-          # Arguments for pguyot/arm-runner-action
+          # Arguments for arm-runner-action
           cpu: cortex-a7
           base_image: raspios_lite:latest
           # Arguments for build_fpc script.
@@ -180,7 +174,7 @@ jobs:
 
         # additional defines for Raspberry Pi 64-bit (Aarch64)
         - arch: raspberry-pi-64
-          # Arguments for pguyot/arm-runner-action
+          # Arguments for arm-runner-action
           cpu: cortex-a53
           base_image: raspios_lite_arm64:latest
           # Arguments for build_fpc script.
@@ -189,7 +183,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-      - uses: pguyot/arm-runner-action@v2
+      - uses: castle-engine/arm-runner-action@castle-current
         with:
           base_image: ${{ matrix.base_image }}
           cpu: ${{ matrix.cpu }}
